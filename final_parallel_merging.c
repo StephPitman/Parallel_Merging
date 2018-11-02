@@ -1,10 +1,3 @@
-/*
- * serial_merging.c
- *
- *  Created on: Nov 1, 2018
- *      Author: Evgeny Zhereshchin
- */
-
 #include <stdio.h>
 #include <math.h>
 #include <stdbool.h>
@@ -192,31 +185,16 @@ int main(int argc, char *argv[]){
     MPI_Status status;
 	
     
-   
-    
     file1=argv[1];
 	file2=argv[3];
 	file3=argv[5];
     
-    
-  
 
 	long n1=atol(argv[2]);
 	long n2=atol(argv[4]);
     
     write_log( " parsed inputs");
-     
-    
-	
-    generate_array(file1, n1);
-	 write_log("generated 1");
-    
-    
-    generate_array(file2, n2);
-      write_log("generated 2");
-    
-    
-    
+
 	
 	MPI_Init(&argc, &argv);
 	int id,p;
@@ -228,14 +206,22 @@ int main(int argc, char *argv[]){
 	FILE  *f1 =NULL;
 	FILE  *f2 =NULL;
 	
-	f1 = fopen(file1,"r");
-	f2 = fopen(file2,"r");
+	
 	
 	MPI_Comm_rank (MPI_COMM_WORLD, &id);
-  MPI_Comm_size (MPI_COMM_WORLD, &p);
-  
-  ID = id;
-	
+	MPI_Comm_size (MPI_COMM_WORLD, &p);
+  	ID = id;
+	if (id==0){
+		generate_array(file1, n1);
+		generate_array(file2, n2);
+		
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+	else{
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+	f1 = fopen(file1,"r");
+	f2 = fopen(file2,"r");
 	long i_0, i_1;  //start and finish of the segment A to merge
 	long j_0, j_1; //start and finish of the segment B to merge
 
@@ -316,5 +302,3 @@ int main(int argc, char *argv[]){
 	MPI_Finalize();
     return 0;
 	}
-	
-
