@@ -87,26 +87,41 @@ long binary_search(FILE *file, long n, long target){
  *Output:
  *		-the array passed as C will be modified as merged A & B
 */
-long serial_merge(long *a, long *b, long *c, long sizea, long sizeb){
-	long i=0;
-	long j=0;
-	long k=0;
-	long n=sizea+sizeb;
-	c=malloc(sizeof(long)*n);
-	while (k<n){
-		long a_i=a[i];
-		long b_j=b[j];
-		if (a_i<=b_j){
-			c[k]=a_i;
+void serial_merge(int *a, int *b, int *c, int size_a, int size_b) {
+	int i = 0;
+	int j = 0;
+	int k = 0;
+	int b_j;
+	int a_i;
+	int n2 = size_a + size_b;
+	while (k < n2 && i < size_a && j < size_b) {
+		a_i = a[i];
+		b_j = b[j];
+		if (a_i <= b_j) {
+			c[k] = a_i;
 			i++;
-		}else{
-			c[k]=b_j;
+		} else {
+			c[k] = b_j;
 			j++;
 		}
 		k++;
 	}
-	
-	return n;
+	if (i >= size_a) {
+		for (; j < size_b; j++) {
+			b_j = b[j];
+			c[k] = b_j;
+			j++;
+			k++;
+		}
+	} else if (j >= size_b) {
+		for (; i < size_a; i++) {
+			a_i = a[i];
+			c[k] = a_i;
+			i++;
+			k++;
+		}
+	}
+
 }
 
 long load_array(FILE *file, long start, long end, long *a){
