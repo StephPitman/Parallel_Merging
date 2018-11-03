@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+char buff[100];
 int ID = -1;
 
 int logWritten =0;
@@ -22,11 +22,11 @@ void write_log (char *text ){
         logWritten = 1;
     }
     
-    char buff[100];
+    char ibuff[100];
     
-    sprintf(buff,"<id:%d>", ID);
+    sprintf(ibuff,"<id:%d>", ID);
     
-    fwrite (buff, 1, strlen(buff),logf);
+    fwrite (ibuff, 1, strlen(ibuff),logf);
     
     fwrite (text, 1, strlen(text),logf);
     
@@ -38,10 +38,9 @@ void write_log (char *text ){
 
 
 
-long *generate_array( long size){
+void generate_array( long *array, long size){
       
       
-    long *array = malloc (sizeof(long)*size);
     
     
     long y = 0;
@@ -63,8 +62,6 @@ long *generate_array( long size){
     }
     
  
-
-    return array;
 }
 
 
@@ -105,16 +102,18 @@ long binary_search(long *array, long n, long target){
  *Output:
  *		-the array passed as C will be modified as merged A & B
 */
-void serial_merge(long *a, long *b, long **c, long a_size, long size_b) {
-	long i = 0;
-	long j = 0;
-	long k = 0;
+void serial_merge(long *a, long *b, long **c, long i_0, long j_0, long i_1, long j_1) {
+	long i = i_0;
+	long j = j_0;
+	long a_size = i_1-i_0;
+    long b_size = j_1-j_0;
+    long k = 0;
 	long b_j;
 	long a_i;
-	long n2 = a_size + size_b;
+	long n2 = a_size + b_size;
     
     *c=malloc(sizeof(long)*n2);
-	while (k < n2 && i < a_size && j < size_b) {
+	while (k < n2 && i < a_size && j < b_size) {
 		a_i = a[i];
 		b_j = b[j];
 		if (a_i <= b_j) {
@@ -127,13 +126,13 @@ void serial_merge(long *a, long *b, long **c, long a_size, long size_b) {
 		k++;
 	}
 	if (i >= a_size) {
-		for (; j < size_b; j++) {
+		for (; j < b_size; j++) {
 			b_j = b[j];
 			(*c)[k] = b_j;
 			j++;
 			k++;
 		}
-	} else if (j >= size_b) {
+	} else if (j >= b_size) {
 		for (; i < a_size; i++) {
 			a_i = a[i];
 			(*c)[k] = a_i;
@@ -167,30 +166,38 @@ long load_array(FILE *file, long start, long end, long **a){
 
 
 int main(int argc, char *argv[]){
-	char *file1;
-    
-    
-    
-    
-     write_log("started main");
 	
-    MPI_Status status;
-	
+    srand(time(NULL));
     
-    file1=argv[1];
-	long n1=atol(argv[2]);
-	long n2=atol(argv[3]);
-    
-    write_log( " parsed inputs");
-
-	
-	MPI_Init(&argc, &argv);
+    MPI_Init(&argc, &argv);
+    char *file1;
 	int id,p;
 	long *a;
 	long *b;
 	long *c;
 	long *bigC;
+    
+    
+    long n1=atol(argv[2]);
+	long n2=atol(argv[3]);
+    
 	long n3 = n1+n2;
+    
+    
+    
+    write_log("started main");
+	
+    MPI_Status status;
+	
+    
+    file1=argv[1];
+	
+    a = malloc (sizeof(long)*n1);
+    b = malloc (sizeof(long)*n2);
+    write_log( " parsed inputs");
+
+	
+	
 	
 	
 	
@@ -198,19 +205,36 @@ int main(int argc, char *argv[]){
 	MPI_Comm_size (MPI_COMM_WORLD, &p);
   	ID = id;
 	if (id==0){
-		a=generate_array(n1);
-		b=generate_array(n2);
+        
+        
+    
+        
+		generate_array(a,n1);
+		generate_array(b,n2);
 		
-		MPI_Bcast(&n1,1,MPI_LONG,0,MPI_COMM_WORLD);
-		MPI_Bcast(&n2,1,MPI_LONG,0,MPI_COMM_WORLD);
 		MPI_Bcast(a,n1,MPI_LONG,0,MPI_COMM_WORLD);
 		MPI_Bcast(b,n2,MPI_LONG,0,MPI_COMM_WORLD);
+        
+       
 	}
 	else{
-		MPI_Bcast(&n1,1,MPI_LONG,0,MPI_COMM_WORLD);
-		MPI_Bcast(&n2,1,MPI_LONG,0,MPI_COMM_WORLD);
+		write_log ("started bcast rcv");
 		MPI_Bcast(a,n1,MPI_LONG,0,MPI_COMM_WORLD);
 		MPI_Bcast(b,n2,MPI_LONG,0,MPI_COMM_WORLD);
+        
+    /*     for (int z=  0; z < n1  ; z++){
+            printf ("after bcast <id:%d> a[%d] = %d \n", id,z, a[z]);
+            fflush(stdout);
+        }
+        
+         for (int z=  0; z < n2  ; z++){
+            printf ("after bcast <id:%d> b[%d] = %d \n", id,z, b[z]);
+             fflush(stdout);
+        }
+        */
+        
+        
+        write_log ("ended bcast rcv");
 	}
 	long i_0, i_1;  //start and finish of the segment A to merge
 	long j_0, j_1; //start and finish of the segment B to merge
@@ -237,7 +261,19 @@ int main(int argc, char *argv[]){
 		b_size=j_1-j_0;
         
         write_log("merging chunk");
-		serial_merge(a,b,&c,a_size, b_size);
+        
+        
+        
+        
+        
+        
+		serial_merge(a,b,&c,i_0, j_0,i_1,j_1);
+        
+        for (int z=  0; z < a_size + j_1 -j_0 ; z++){
+            printf ("<id:%d> c[%d] = %d \n", id,z, c[z]);
+            
+        }
+        
         write_log("merged chunk");
         
 	}else{
@@ -253,7 +289,14 @@ int main(int argc, char *argv[]){
         
         write_log("decided on indexes for 2nd array");
         write_log("merging chunk");
-		serial_merge(a,b,&c,a_size,b_size);
+		serial_merge(a,b,&c,i_0, j_0,i_1,j_1);
+        
+        for (int z=  0; z < a_size + j_1 -j_0 ; z++){
+            printf ("<id:%d> c[%d] = %d \n", id,z, c[z]);
+            
+        }
+        
+        
         write_log("merged chunk");
 	}
 	
@@ -273,7 +316,15 @@ int main(int argc, char *argv[]){
         write_log ("received all");
 		FILE *f;
 		f = fopen(file1,"w");
-		fwrite(bigC,4,offset,f);
+        
+        for (int z = 0; z < offset-1; z++){
+            sprintf(buff,"%d,",*(bigC+z));
+            fwrite (buff,1,strlen(buff),f);
+        }
+        sprintf(buff,"%d,",*(bigC+offset-1));
+        fwrite (buff,1,strlen(buff),f);
+        
+		//fwrite(bigC,4,offset,f);
 		fclose(f);
 
 	}else{
