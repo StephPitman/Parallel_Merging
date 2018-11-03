@@ -65,7 +65,6 @@ void generate_array( long *array, long size){
 }
 
 
-/*used wikipedia as reference
  *Inputs:
  *		-array of integers to be searched
  *		-size of the array
@@ -73,20 +72,30 @@ void generate_array( long *array, long size){
  *Output:
  *		-the index of the value or closes value that is smaller than target
 */
+
 long binary_search(long *array, long n, long target){
 	long L=0;
-	long R=n;
+	long R=n-1;
 	long m;
+	if (target>=array[n-1]){
+		return n-1;
+	}
 	while(L<R){
 		m=floor(L+(R-L)/2);
-		
-		
-		if (array[m] < target){
-			L=m+1;
-		}else{
+		long value = array[m];
+		if (value > target){
 			R=m;
+		}else{
+			if (L==m){
+				R=m;
+			}else{
+				L=m;
+			}
+
+
 		}
 	}
+
 	return L;
 }
 
