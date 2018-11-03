@@ -121,7 +121,7 @@ void serial_merge(long *a, long *b, long *c, long i_0, long j_0, long i_1, long 
 	long n2 = a_size + b_size;
     
     
-	while (k < n2 && i < a_size && j < b_size) {
+	while (k < n2 && i < (i_1) && j < (j_1)) {
 		a_i = a[i];
 		b_j = b[j];
 		if (a_i <= b_j) {
@@ -133,15 +133,15 @@ void serial_merge(long *a, long *b, long *c, long i_0, long j_0, long i_1, long 
 		}
 		k++;
 	}
-	if (i >= a_size) {
-		for (; j < b_size; j++) {
+	if (i >= (i_1)) {
+		for (; j < (j_1); j++) {
 			b_j = b[j];
 			c[k] = b_j;
 			j++;
 			k++;
 		}
-	} else if (j >= b_size) {
-		for (; i < a_size; i++) {
+	} else if (j >= (j_1)) {
+		for (; i < (i_1); i++) {
 			a_i = a[i];
 			c[k] = a_i;
 			i++;
@@ -252,24 +252,51 @@ int main(int argc, char *argv[]){
 	//0 cs 1cs
 	//1cs+1 2cs
 	//2cs+1 3cs
-	if (id!=p-1){
-		i_0=id*chunk_size;
-		i_1=(id+1)*chunk_size-1;
+    
+    
+    
+    
+	//if (id!=p-1){
+        
+        if (id == 0 ){
+            i_0=0;
+            
+            
+            j_0 = 0;
+        }else {
+            i_0=id*chunk_size;
+            
+            
+            j_0=binary_search(b,n2,a[i_0-1])+1;
+        }
+        
+		if (id < p-1){
+            i_1=(id+1)*chunk_size-1;
+            
+            
+            j_1=binary_search(b,n2,a[i_1]);
+        }else{
+           
+            i_1= n1-1;
+            
+            j_1=n2-1;
+        }
         
         
-            write_log("decided on indexes for first array");
-     
-		a_size=chunk_size;
-		j_0=binary_search(b,n2,a[i_0]);
-		j_1=binary_search(b,n2,a[i_1]);
 		
+        
+        
+        write_log("decided on indexes for first array");
         write_log("decided on indexes for 2nd array");
+		a_size=i_1 - i_0;
+        b_size = j_1- j_0;
+		
         
         
-		b_size=j_1-j_0;
+        
         
         write_log("merging chunk");
-        
+     /*   
       printf ("before  merge <id:%d> i0:a[%d]=%d, i1:a[%d]=%d, j0:b[%d]=%d,  j1:b[%d]=%d \n",
 	      id, i_0,a[i_0],i_1, a[i_1],j_0, b[j_0], j_1, b[j_1]);
         
@@ -282,7 +309,7 @@ int main(int argc, char *argv[]){
             printf ("before  merge <id:%d> b[%d] = %d \n", id,z, b[z]);
              
         }
-        fflush(stdout);
+        fflush(stdout);*/
         
         c=malloc(sizeof(long)*(a_size + b_size));
 		serial_merge(a,b,c,i_0, j_0,i_1,j_1);
@@ -293,37 +320,7 @@ int main(int argc, char *argv[]){
         }
         
         write_log("merged chunk");
-        
-	}else{
-		i_0=id*chunk_size;
-		i_1=n1-1;
-		a_size=i_1-i_0;
-        
-        write_log("decided on indexes for first array");
        
-        
-		j_0=binary_search(b,n2,a[i_0]);
-		j_1=n2-1;
-        
-        b_size =  j_1 - j_0;
-        
-        write_log("decided on indexes for 2nd array");
-        write_log("merging chunk");
-        
-        c=malloc(sizeof(long)*(a_size + b_size));
-		serial_merge(a,b,c,i_0, j_0,i_1,j_1);
-        
-        
-        
-        
-        for (int z=  0; z < a_size + j_1 -j_0 ; z++){
-            printf ("<id:%d> c[%d] = %d \n", id,z, c[z]);
-            
-        }
-        
-        
-        write_log("merged chunk");
-	}
 	
 	if (id==0){
         write_log ("receiving");
