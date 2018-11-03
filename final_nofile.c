@@ -271,8 +271,8 @@ int main(int argc, char *argv[]){
         
         write_log("merging chunk");
         
-        printf ("before  merge <id:%d> i0:%d,j0:%d,i1:%d,j1:%d",id, i_0,j_0, i_1, j_1);
-        
+      printf ("before  merge <id:%d> i0:a[%d]=%d, i1:a[%d]=%d, j0:b[%d]=%d,  j1:b[%d]=%d \n",
+	      id, i_0,a[i_0],i_1, a[i_1],j_0, b[j_0], j_1, b[j_1]);
         
         for (int z=  0; z < n1  ; z++){
             printf ("before  merge <id:%d> a[%d] = %d \n", id,z, a[z]);
