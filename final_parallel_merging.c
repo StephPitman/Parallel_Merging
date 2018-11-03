@@ -213,7 +213,7 @@ int main(int argc, char *argv[]){
   	ID = id;
 	if (id==0){
 		generate_array(file1, n1);
-		generate_array(file2, n2);
+		generate_array(file2, n2); 
 		
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
