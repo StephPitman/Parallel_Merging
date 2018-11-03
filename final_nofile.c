@@ -64,7 +64,7 @@ void generate_array( long *array, long size){
  
 }
 
-
+/*
  *Inputs:
  *		-array of integers to be searched
  *		-size of the array
