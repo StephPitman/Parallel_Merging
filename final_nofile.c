@@ -7,34 +7,9 @@
 #include <string.h>
 
 char buff[100];
-int ID = -1;
 
-int logWritten =0;
 
-void write_log (char *text ){
-    FILE *logf;
-    
-    if (logWritten == 1){
-    
-        logf = fopen ("log1.txt", "a");
-    }else{
-        logf = fopen ("log1.txt", "w");
-        logWritten = 1;
-    }
-    
-    char ibuff[100];
-    
-    sprintf(ibuff,"<id:%d>", ID);
-    
-    fwrite (ibuff, 1, strlen(ibuff),logf);
-    
-    fwrite (text, 1, strlen(text),logf);
-    
-    fwrite ("\n", 1, 1,logf);
-    
-    fclose(logf);
-    
-}
+
 
 
 
@@ -113,15 +88,15 @@ long binary_search(long *array, long n, long target){
 void serial_merge(long *a, long *b, long *c, long i_0, long j_0, long i_1, long j_1) {
 	long i = i_0;
 	long j = j_0;
-	long a_size = i_1-i_0;
-    long b_size = j_1-j_0;
+	long a_size = i_1-i_0+1;
+    long b_size = j_1-j_0+1;
     long k = 0;
 	long b_j;
 	long a_i;
-	long n2 = a_size + b_size;
+	long c_size = a_size + b_size;
     
     
-	while (k < n2 && i < (i_1) && j < (j_1)) {
+	while (k < c_size && i <= (i_1) && j <= (j_1)) {
 		a_i = a[i];
 		b_j = b[j];
 		if (a_i <= b_j) {
@@ -133,21 +108,24 @@ void serial_merge(long *a, long *b, long *c, long i_0, long j_0, long i_1, long 
 		}
 		k++;
 	}
-	if (i >= (i_1)) {
-		for (; j < (j_1); j++) {
+    
+    //printf ("before append id = %d,  i= %d, j=%d, k=%d\n", ID, i,j,k);
+	if (i > (i_1)) {
+		for (; j <= (j_1); j++) {
 			b_j = b[j];
 			c[k] = b_j;
-			j++;
+			
 			k++;
 		}
-	} else if (j >= (j_1)) {
-		for (; i < (i_1); i++) {
+	} else if (j > (j_1)) {
+		for (; i <= (i_1); i++) {
 			a_i = a[i];
 			c[k] = a_i;
-			i++;
+			
 			k++;
 		}
 	}
+    // printf ("after appending leftover id = %d,  i= %d, j=%d, k=%d\n", ID, i,j,k);
 
 }
 
@@ -211,7 +189,7 @@ int main(int argc, char *argv[]){
 	
 	MPI_Comm_rank (MPI_COMM_WORLD, &id);
 	MPI_Comm_size (MPI_COMM_WORLD, &p);
-  	ID = id;
+    
 	if (id==0){
         
         
@@ -248,7 +226,7 @@ int main(int argc, char *argv[]){
 	long j_0, j_1; //start and finish of the segment B to merge
 
 	int chunk_size=n1/p;
-	long a_size, b_size;
+	long a_size, b_size, c_size;
 	//0 cs 1cs
 	//1cs+1 2cs
 	//2cs+1 3cs
@@ -288,18 +266,23 @@ int main(int argc, char *argv[]){
         
         write_log("decided on indexes for first array");
         write_log("decided on indexes for 2nd array");
-		a_size=i_1 - i_0;
-        b_size = j_1- j_0;
+		a_size=i_1 - i_0+1;
+        b_size = j_1- j_0+1;
 		
+        if (j_1 == j_0){
+            b_size = j_1- j_0;
+        }
+        
+        c_size = a_size + b_size;
         
         
         
         
         write_log("merging chunk");
-     /*   
-      printf ("before  merge <id:%d> i0:a[%d]=%d, i1:a[%d]=%d, j0:b[%d]=%d,  j1:b[%d]=%d \n",
-	      id, i_0,a[i_0],i_1, a[i_1],j_0, b[j_0], j_1, b[j_1]);
-        
+       
+    /*  printf ("before  merge <id:%d> i0:a[%d]=%d, i1:a[%d]=%d, irange= %d, j0:b[%d]=%d,  j1:b[%d]=%d , jrange=%d, csize=%D\n",
+	      id, i_0,a[i_0],i_1, a[i_1],a_size,j_0, b[j_0], j_1, b[j_1],b_size,c_size );
+         
         for (int z=  0; z < n1  ; z++){
             printf ("before  merge <id:%d> a[%d] = %d \n", id,z, a[z]);
             
@@ -311,13 +294,13 @@ int main(int argc, char *argv[]){
         }
         fflush(stdout);*/
         
-        c=malloc(sizeof(long)*(a_size + b_size));
+        c=malloc(sizeof(long)*(c_size));
 		serial_merge(a,b,c,i_0, j_0,i_1,j_1);
-        
-        for (int z=  0; z < a_size + j_1 -j_0 ; z++){
+        /*
+        for (int z=  0; z < c_size  ; z++){
             printf ("<id:%d> c[%d] = %d \n", id,z, c[z]);
             
-        }
+        }*/
         
         write_log("merged chunk");
        
@@ -326,13 +309,19 @@ int main(int argc, char *argv[]){
         write_log ("receiving");
 		bigC=malloc(sizeof(long)*n3);
 		long offset = 0;
+        
+        for (int z = 0; z < c_size; z++){
+              bigC[z] = c[z];
+        }
+        offset += c_size;
+        
 		for(int source=1;source<p;source++){
             write_log ("receiving proc");
             
           
 			long rcv_size;
-			MPI_Recv(&rcv_size,1,MPI_UNSIGNED_LONG,source,1,MPI_COMM_WORLD,&status);
-			MPI_Recv(bigC+offset,rcv_size,MPI_UNSIGNED_LONG,source,2,MPI_COMM_WORLD,&status);
+			MPI_Recv(&rcv_size,1,MPI_LONG,source,1,MPI_COMM_WORLD,&status);
+			MPI_Recv(bigC+offset,rcv_size,MPI_LONG,source,2,MPI_COMM_WORLD,&status);
 			offset+=rcv_size;
 		}
         write_log ("received all");
@@ -343,7 +332,7 @@ int main(int argc, char *argv[]){
             sprintf(buff,"%d,",*(bigC+z));
             fwrite (buff,1,strlen(buff),f);
         }
-        sprintf(buff,"%d,",*(bigC+offset-1));
+        sprintf(buff,"%d",*(bigC+offset-1));
         fwrite (buff,1,strlen(buff),f);
         
 		//fwrite(bigC,4,offset,f);
@@ -351,8 +340,8 @@ int main(int argc, char *argv[]){
 
 	}else{
         write_log ("sending"); 
-		MPI_Send(&a_size,1,MPI_UNSIGNED_LONG,0,1,MPI_COMM_WORLD);
-		MPI_Send(c,1,MPI_UNSIGNED_LONG,0,2,MPI_COMM_WORLD);	
+		MPI_Send(&c_size,1,MPI_LONG,0,1,MPI_COMM_WORLD);
+		MPI_Send(c,c_size,MPI_LONG,0,2,MPI_COMM_WORLD);	
         write_log ("sent");
 	}
 
